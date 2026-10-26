@@ -538,7 +538,8 @@ async def list_tools() -> list[types.Tool]:
             description=(
                 "List the providers available as Quorum participants: agent CLIs (claude, codex, agy, "
                 "grok; read the project and the web) and the API/local providers configured in "
-                "~/.quorum/.env (openai, anthropic, google, xai, openrouter, lmstudio, llamaswap, custom, "
+                "~/.quorum/.env (openai, anthropic, google, xai, deepseek, aliyun, openrouter, "
+                "lmstudio, llamaswap, custom, "
                 "ollama; no tools, they see only the question and files). Gives status, models with "
                 "descriptions, roles (flagship/workhorse/fast) and effort levels, plus methods and "
                 "limits. Agent data is cached for an hour; pass refresh=true to rediscover."

@@ -91,13 +91,20 @@ def test_anthropic_client_effort_uses_adaptive_thinking():
     assert "output_config" not in plain._client.messages.create.call_args.kwargs
 
 
+def test_api_providers_include_deepseek_and_aliyun():
+    from quorum.clients.agent_cli import API_PROVIDERS
+
+    assert "deepseek" in API_PROVIDERS and "aliyun" in API_PROVIDERS
+
+
 @patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
 @patch("quorum.providers.get_settings")
 def test_api_catalog_follows_env_config(mock_settings, mock_ollama):
     from quorum.providers import api_catalog
 
     s = settings()
-    for p in ("openrouter", "lmstudio", "llamaswap", "custom", "google", "xai"):
+    for p in ("openrouter", "lmstudio", "llamaswap", "custom", "google", "xai",
+              "deepseek", "aliyun"):
         setattr(s, f"has_{p}", False)
     mock_settings.return_value = s
     mock_ollama.return_value = [("ollama:qwen3:8b", "Qwen3 8b")]
@@ -122,6 +129,27 @@ def test_mcp_canonicalizes_bare_ids_and_drops_unsupported_effort():
         assert ids == ["claude:opus@high", "openai:gpt-5.5@high", "ollama:qwen3:8b"]
         with pytest.raises(ValueError, match="Unknown model 'gpt-4o'"):
             run(m._validate_participants(["gpt-4o"], None, catalog))
+
+
+@patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
+@patch("quorum.providers.get_settings")
+def test_api_catalog_reports_deepseek_aliyun(mock_settings, mock_ollama):
+    from quorum.providers import api_catalog
+
+    s = settings(has_deepseek=True, has_aliyun=True,
+                 deepseek_api_key="sk-deepseek-test-key-12345",
+                 aliyun_api_key="sk-aliyun-test-key-123456")
+    s.get_models_with_display_names.side_effect = lambda p: {
+        "deepseek": [("deepseek-chat", "DeepSeek Chat")],
+        "aliyun": [("qwen3.8-flash", "Qwen3.8 Flash")],
+    }.get(p, [])
+    mock_settings.return_value = s
+    mock_ollama.return_value = []
+    cat = run(api_catalog())
+    assert cat["deepseek"]["status"] == "ok" and cat["deepseek"]["kind"] == "api"
+    assert cat["deepseek"]["models"][0]["id"].startswith("deepseek:")
+    assert cat["aliyun"]["status"] == "ok"
+    assert cat["aliyun"]["models"][0]["id"] == "aliyun:qwen3.8-flash"
 
 
 def test_global_config_ignores_cwd_env(tmp_path, monkeypatch):

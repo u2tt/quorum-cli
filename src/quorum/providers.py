@@ -101,7 +101,7 @@ def list_all_models_sync() -> dict[str, list[ModelInfo]]:
         ]
 
     # OpenAI-compatible providers
-    for provider in ["openrouter", "lmstudio", "llamaswap", "custom"]:
+    for provider in ["deepseek", "aliyun", "openrouter", "lmstudio", "llamaswap", "custom"]:
         models = settings.get_models_with_display_names(provider)
         if models:  # Only include if configured
             result[provider] = [
@@ -118,8 +118,8 @@ def get_provider_for_model(model_id: str) -> str | None:
     Cloud providers (OpenAI, Anthropic, Google, xAI) require models to be
     listed in their respective *_MODELS environment variables.
 
-    OpenAI-compatible providers (OpenRouter, LM Studio, llama-swap, Custom)
-    also require models to be listed in their respective *_MODELS variables.
+    OpenAI-compatible providers (DeepSeek, Aliyun, OpenRouter, LM Studio, llama-swap,
+    Custom) also require models to be listed in their respective *_MODELS variables.
 
     Ollama is a special case: models are auto-discovered and use prefix-based
     routing with the "ollama:" prefix.
@@ -129,7 +129,8 @@ def get_provider_for_model(model_id: str) -> str | None:
 
     Returns:
         Provider name ("openai", "anthropic", "google", "xai", "ollama",
-        "openrouter", "lmstudio", "llamaswap", "custom") or None if not configured.
+        "deepseek", "aliyun", "openrouter", "lmstudio", "llamaswap", "custom")
+        or None if not configured.
     """
     # Special case: Ollama prefix-based routing (auto-discovered models)
     if model_id.startswith("ollama:"):
@@ -145,7 +146,7 @@ def get_provider_for_model(model_id: str) -> str | None:
             return provider
 
     # OpenAI-compatible providers
-    for provider in ["openrouter", "lmstudio", "llamaswap", "custom"]:
+    for provider in ["deepseek", "aliyun", "openrouter", "lmstudio", "llamaswap", "custom"]:
         configured_models = settings.get_models(provider)
         if model_id in configured_models:
             return provider

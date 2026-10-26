@@ -317,6 +317,30 @@ def _create_model_client_internal(model_id: str) -> ChatClient:
 
     # === OpenAI-compatible providers ===
 
+    elif provider == "deepseek":
+        if not settings.has_deepseek:
+            raise ValueError(
+                "DeepSeek API key not configured. Set DEEPSEEK_API_KEY in .env"
+            )
+        return OpenAIClient(
+            model=model_id,
+            api_key=settings.deepseek_api_key,
+            base_url=settings.deepseek_base_url,
+            http_client=_get_http_client(),
+        )
+
+    elif provider == "aliyun":
+        if not settings.has_aliyun:
+            raise ValueError(
+                "Aliyun API key not configured. Set ALIYUN_API_KEY in .env"
+            )
+        return OpenAIClient(
+            model=model_id,
+            api_key=settings.aliyun_api_key,
+            base_url=settings.aliyun_base_url,
+            http_client=_get_http_client(),
+        )
+
     elif provider == "openrouter":
         if not settings.has_openrouter:
             raise ValueError(

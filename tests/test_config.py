@@ -190,6 +190,13 @@ class TestSettings:
         env_vars = [
             "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "XAI_API_KEY",
             "OPENAI_MODELS", "ANTHROPIC_MODELS", "GOOGLE_MODELS", "XAI_MODELS",
+            "OLLAMA_API_KEY", "OLLAMA_BASE_URL",
+            "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODELS",
+            "ALIYUN_API_KEY", "ALIYUN_BASE_URL", "ALIYUN_MODELS",
+            "OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "OPENROUTER_MODELS",
+            "LMSTUDIO_API_KEY", "LMSTUDIO_BASE_URL", "LMSTUDIO_MODELS",
+            "LLAMASWAP_API_KEY", "LLAMASWAP_BASE_URL", "LLAMASWAP_MODELS",
+            "CUSTOM_API_KEY", "CUSTOM_BASE_URL", "CUSTOM_MODELS",
             "QUORUM_METHOD", "QUORUM_SYNTHESIZER", "QUORUM_ROUNDS_PER_AGENT",
             "QUORUM_DEFAULT_LANGUAGE",
         ]
@@ -260,6 +267,66 @@ class TestSettings:
         assert settings.has_anthropic is False
         assert settings.has_google is False
         assert settings.has_xai is False
+
+    def test_has_deepseek_aliyun_properties(self):
+        """Test has_deepseek/has_aliyun are False when no keys set."""
+        settings = Settings(_env_file=None)
+        assert settings.has_deepseek is False
+        assert settings.has_aliyun is False
+
+    def test_has_deepseek_when_key_set(self, monkeypatch):
+        """Test has_deepseek is True once DEEPSEEK_API_KEY is set."""
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-deepseek-test-key-12345")
+        settings = Settings(_env_file=None)
+        assert settings.has_deepseek is True
+        assert settings.has_aliyun is False
+
+    def test_has_aliyun_when_key_set(self, monkeypatch):
+        """Test has_aliyun is True once ALIYUN_API_KEY is set."""
+        monkeypatch.setenv("ALIYUN_API_KEY", "sk-aliyun-test-key-123456")
+        settings = Settings(_env_file=None)
+        assert settings.has_aliyun is True
+        assert settings.has_deepseek is False
+
+    def test_deepseek_aliyun_default_base_urls(self):
+        """Test default base URLs for deepseek and aliyun."""
+        settings = Settings(_env_file=None)
+        assert settings.deepseek_base_url == "https://api.deepseek.com/v1"
+        assert settings.aliyun_base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+    def test_deepseek_aliyun_base_urls_overridable(self, monkeypatch):
+        """Test DEEPSEEK_BASE_URL/ALIYUN_BASE_URL override the defaults."""
+        monkeypatch.setenv("DEEPSEEK_BASE_URL", "https://proxy.local/deepseek")
+        monkeypatch.setenv("ALIYUN_BASE_URL", "https://proxy.local/aliyun")
+        settings = Settings(_env_file=None)
+        assert settings.deepseek_base_url == "https://proxy.local/deepseek"
+        assert settings.aliyun_base_url == "https://proxy.local/aliyun"
+
+    def test_get_models_deepseek(self, monkeypatch):
+        """Test parsing DEEPSEEK_MODELS."""
+        monkeypatch.setenv("DEEPSEEK_MODELS", "deepseek-chat, deepseek-reasoner")
+        settings = Settings(_env_file=None)
+        assert settings.get_models("deepseek") == ["deepseek-chat", "deepseek-reasoner"]
+
+    def test_get_models_aliyun(self, monkeypatch):
+        """Test parsing ALIYUN_MODELS."""
+        monkeypatch.setenv("ALIYUN_MODELS", "qwen3.8-flash")
+        settings = Settings(_env_file=None)
+        assert settings.get_models("aliyun") == ["qwen3.8-flash"]
+
+    def test_available_providers_deepseek_aliyun(self, monkeypatch):
+        """Test available_providers includes deepseek and aliyun when keys set."""
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-deepseek-test-key-12345")
+        monkeypatch.setenv("ALIYUN_API_KEY", "sk-aliyun-test-key-123456")
+        settings = Settings(_env_file=None)
+        assert "deepseek" in settings.available_providers
+        assert "aliyun" in settings.available_providers
+
+    def test_available_providers_excludes_deepseek_aliyun(self):
+        """Test deepseek/aliyun are absent from available_providers without keys."""
+        settings = Settings(_env_file=None)
+        assert "deepseek" not in settings.available_providers
+        assert "aliyun" not in settings.available_providers
 
     def test_synthesizer_mode_default(self):
         """Test default synthesizer mode."""

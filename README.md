@@ -53,8 +53,8 @@ Ask your coding agent for a Quorum and it runs a structured debate between the m
   on your own subscription and needs no API key. They can read your project (read-only) and use the
   web, isolated from your hooks, plugins and instruction files.
 - **API and local models** from your `~/.quorum/.env` (see [Configuration](#configuration)): OpenAI,
-  Anthropic, Google, xAI, OpenRouter, LM Studio, llama-swap, custom endpoints and Ollama. They see the
-  question and any files passed with it, but have no tool access.
+  Anthropic, Google, xAI, OpenRouter, DeepSeek, Aliyun DashScope, LM Studio, llama-swap, custom
+  endpoints and Ollama. They see the question and any files passed with it, but have no tool access.
 
 Agents and API models can take part in the same discussion.
 
@@ -187,6 +187,8 @@ You only need to configure the providers you want to use. At least one provider 
 - **Anthropic**: https://docs.anthropic.com/en/docs/about-claude/models
 - **Google**: https://ai.google.dev/gemini-api/docs/models
 - **xAI (Grok)**: https://docs.x.ai/docs/models
+- **DeepSeek**: https://platform.deepseek.com/api_keys
+- **Aliyun DashScope (Model Studio)**: https://bailian.console.aliyun.com/
 - **Ollama**: https://ollama.com/library
 
 ### Ollama (Local Models)
@@ -207,12 +209,27 @@ Models appear with `ollama:` prefix (e.g., `ollama:llama3`, `ollama:qwen3:8b`).
 
 ### OpenAI-Compatible Providers
 
-Quorum supports any service that uses the OpenAI API format. This lets you use OpenRouter, LM Studio, llama-swap, vLLM, LocalAI, and other compatible servers alongside native providers.
+Quorum supports any service that uses the OpenAI API format. This lets you use OpenRouter, DeepSeek, Aliyun DashScope, LM Studio, llama-swap, vLLM, LocalAI, and other compatible servers alongside native providers.
 
 **OpenRouter** - Access 200+ models through one API:
 ```bash
 OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_MODELS=anthropic/claude-3-opus,openai/gpt-4o,meta-llama/llama-3.1-70b
+```
+
+**DeepSeek** - Official DeepSeek API (OpenAI-compatible):
+```bash
+DEEPSEEK_API_KEY=sk-...
+DEEPSEEK_MODELS=deepseek-chat,deepseek-reasoner
+# DEEPSEEK_BASE_URL=https://api.deepseek.com/v1  # Default
+```
+
+**Aliyun DashScope** - Alibaba Cloud Bailian (Model Studio) in compatible mode:
+```bash
+ALIYUN_API_KEY=sk-...
+ALIYUN_MODELS=qwen3.8-max,qwen3.8-flash
+# ALIYUN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1  # Default
+# Set it to https://<instance>.maas.aliyuncs.com/compatible-mode/v1 for a dedicated MAAS endpoint
 ```
 
 **LM Studio** - Local models with a GUI (no API key required):
@@ -234,7 +251,7 @@ CUSTOM_MODELS=model-name-1,model-name-2
 CUSTOM_API_KEY=your-key  # If required
 ```
 
-Models from these providers appear in `/models` just like native providers. You can use them together with OpenAI, Anthropic, Google, xAI, and Ollama in the same discussion.
+Models from these providers appear in `/models` just like native providers. You can use them together with OpenAI, Anthropic, Google, xAI, DeepSeek, Aliyun DashScope, and Ollama in the same discussion.
 
 **Configuration scenarios:**
 

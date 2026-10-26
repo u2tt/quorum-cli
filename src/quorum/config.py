@@ -242,6 +242,20 @@ class Settings(BaseSettings):
     # These allow connecting to services that use the OpenAI API format:
     # OpenRouter, LM Studio, llama-swap, LocalAI, vLLM, etc.
 
+    # DeepSeek (official OpenAI-compatible endpoint)
+    deepseek_api_key: str | None = Field(default=None, alias="DEEPSEEK_API_KEY")
+    deepseek_base_url: str = Field(
+        default="https://api.deepseek.com/v1", alias="DEEPSEEK_BASE_URL"
+    )
+    deepseek_models: str = Field(default="", alias="DEEPSEEK_MODELS")
+
+    # Aliyun DashScope / Model Studio (OpenAI-compatible mode)
+    aliyun_api_key: str | None = Field(default=None, alias="ALIYUN_API_KEY")
+    aliyun_base_url: str = Field(
+        default="https://dashscope.aliyuncs.com/compatible-mode/v1", alias="ALIYUN_BASE_URL"
+    )
+    aliyun_models: str = Field(default="", alias="ALIYUN_MODELS")
+
     # OpenRouter (multi-model aggregator)
     openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")
     openrouter_base_url: str = Field(
@@ -282,6 +296,8 @@ class Settings(BaseSettings):
             "google": self.google_models,
             "xai": self.xai_models,
             # OpenAI-compatible providers
+            "deepseek": self.deepseek_models,
+            "aliyun": self.aliyun_models,
             "openrouter": self.openrouter_models,
             "lmstudio": self.lmstudio_models,
             "llamaswap": self.llamaswap_models,
@@ -339,8 +355,8 @@ class Settings(BaseSettings):
 
     @field_validator(
         "openai_api_key", "anthropic_api_key", "google_api_key", "xai_api_key",
-        "ollama_api_key", "openrouter_api_key", "lmstudio_api_key",
-        "llamaswap_api_key", "custom_api_key",
+        "ollama_api_key", "deepseek_api_key", "aliyun_api_key", "openrouter_api_key",
+        "lmstudio_api_key", "llamaswap_api_key", "custom_api_key",
         mode="after"
     )
     @classmethod
@@ -564,6 +580,16 @@ class Settings(BaseSettings):
 
     # OpenAI-compatible providers
     @property
+    def has_deepseek(self) -> bool:
+        """DeepSeek is available if API key is set."""
+        return bool(self.deepseek_api_key)
+
+    @property
+    def has_aliyun(self) -> bool:
+        """Aliyun DashScope is available if API key is set."""
+        return bool(self.aliyun_api_key)
+
+    @property
     def has_openrouter(self) -> bool:
         """OpenRouter is available if API key is set."""
         return bool(self.openrouter_api_key)
@@ -599,6 +625,10 @@ class Settings(BaseSettings):
         if self.has_ollama:
             providers.append("ollama")
         # OpenAI-compatible providers
+        if self.has_deepseek:
+            providers.append("deepseek")
+        if self.has_aliyun:
+            providers.append("aliyun")
         if self.has_openrouter:
             providers.append("openrouter")
         if self.has_lmstudio:

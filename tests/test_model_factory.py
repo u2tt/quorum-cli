@@ -84,6 +84,93 @@ class TestCreateAnthropicClient:
             _create_model_client_internal("claude-3-opus")
 
 
+class TestCreateDeepSeekClient:
+    """Tests for DeepSeek client creation."""
+
+    @patch("quorum.models.get_settings")
+    @patch("quorum.models.get_provider_for_model")
+    def test_creates_deepseek_client_with_base_url(
+        self, mock_get_provider, mock_get_settings
+    ):
+        """DeepSeek uses an OpenAI-compatible client with the configured base URL."""
+        from quorum.clients import OpenAIClient
+        from quorum.models import _create_model_client_internal
+
+        mock_settings = MagicMock()
+        mock_settings.has_deepseek = True
+        mock_settings.deepseek_api_key = "sk-deepseek-test-key-12345"
+        mock_settings.deepseek_base_url = "https://api.deepseek.com/v1"
+        mock_get_settings.return_value = mock_settings
+        mock_get_provider.return_value = "deepseek"
+
+        client = _create_model_client_internal("deepseek-chat")
+
+        assert isinstance(client, OpenAIClient)
+        assert client.model == "deepseek-chat"
+        assert str(client._client.base_url).rstrip("/") == "https://api.deepseek.com/v1"
+
+    @patch("quorum.models.get_settings")
+    @patch("quorum.models.get_provider_for_model")
+    def test_raises_error_without_deepseek_key(
+        self, mock_get_provider, mock_get_settings
+    ):
+        """ValueError raised when DeepSeek API key not configured."""
+        from quorum.models import _create_model_client_internal
+
+        mock_settings = MagicMock()
+        mock_settings.has_deepseek = False
+        mock_get_settings.return_value = mock_settings
+        mock_get_provider.return_value = "deepseek"
+
+        with pytest.raises(ValueError, match="DEEPSEEK_API_KEY"):
+            _create_model_client_internal("deepseek-chat")
+
+
+class TestCreateAliyunClient:
+    """Tests for Aliyun DashScope client creation."""
+
+    @patch("quorum.models.get_settings")
+    @patch("quorum.models.get_provider_for_model")
+    def test_creates_aliyun_client_with_base_url(
+        self, mock_get_provider, mock_get_settings
+    ):
+        """Aliyun uses an OpenAI-compatible client with the configured base URL."""
+        from quorum.clients import OpenAIClient
+        from quorum.models import _create_model_client_internal
+
+        mock_settings = MagicMock()
+        mock_settings.has_aliyun = True
+        mock_settings.aliyun_api_key = "sk-aliyun-test-key-123456"
+        mock_settings.aliyun_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        mock_get_settings.return_value = mock_settings
+        mock_get_provider.return_value = "aliyun"
+
+        client = _create_model_client_internal("qwen3.8-flash")
+
+        assert isinstance(client, OpenAIClient)
+        assert client.model == "qwen3.8-flash"
+        assert (
+            str(client._client.base_url).rstrip("/")
+            == "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+
+    @patch("quorum.models.get_settings")
+    @patch("quorum.models.get_provider_for_model")
+    def test_raises_error_without_aliyun_key(
+        self, mock_get_provider, mock_get_settings
+    ):
+        """ValueError raised when Aliyun API key not configured."""
+        from quorum.models import _create_model_client_internal
+
+        mock_settings = MagicMock()
+        mock_settings.has_aliyun = False
+        mock_get_settings.return_value = mock_settings
+        mock_get_provider.return_value = "aliyun"
+
+        with pytest.raises(ValueError, match="ALIYUN_API_KEY"):
+            _create_model_client_internal("qwen3.8-flash")
+
+
 class TestOllamaTimeoutHandling:
     """Tests for Ollama-specific timeout handling."""
 
