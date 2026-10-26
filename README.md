@@ -253,6 +253,8 @@ CUSTOM_API_KEY=your-key  # If required
 
 Models from these providers appear in `/models` just like native providers. You can use them together with OpenAI, Anthropic, Google, xAI, DeepSeek, Aliyun DashScope, and Ollama in the same discussion.
 
+A provider shows up in `/models` once its `*_MODELS` list is set - that list is what registers it, not the API key. Using a model still needs its credentials: an API key for OpenRouter, DeepSeek and Aliyun, a base URL for llama-swap and a custom endpoint, and nothing extra for LM Studio. In the MCP catalog (`quorum_list_models`) a provider also needs those credentials to report `ok` instead of `unavailable`.
+
 **Configuration scenarios:**
 
 | Quorum runs on | Ollama runs on | Configuration |
