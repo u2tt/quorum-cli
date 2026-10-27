@@ -197,3 +197,42 @@ def env_example_vars() -> dict[str, str]:
 def env_example_models() -> dict[str, str]:
     """The *_MODELS entries of .env.example, keyed by variable prefix."""
     return {k[: -len("_models")]: v for k, v in env_example_vars().items() if k.endswith("_models")}
+
+
+# DeepSeek and Aliyun joined the same pattern earlier; they are listed here so
+# the .env.example and README comparisons cover every compatible provider.
+COMPAT_PROVIDERS = (
+    ProviderSpec(
+        key="deepseek",
+        env_prefix="DEEPSEEK",
+        default_base_url="https://api.deepseek.com/v1",
+        sample_models=("deepseek-chat", "deepseek-reasoner"),
+    ),
+    ProviderSpec(
+        key="aliyun",
+        env_prefix="ALIYUN",
+        default_base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        sample_models=("qwen3.8-max", "qwen3.8-flash"),
+    ),
+)
+
+ALL_COMPAT_PROVIDERS = COMPAT_PROVIDERS + CN_PROVIDERS
+
+
+def readme_base_urls() -> dict[str, str]:
+    """The *_BASE_URL examples from README.md, values only.
+
+    The README is prose and its formatting changes often, so only the URL
+    itself is compared - a trailing comment or a reindented code block must
+    not fail the test, but a wrong endpoint must.
+    """
+    import re
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parent.parent / "README.md"
+    out: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\s*#\s*([A-Z][A-Z0-9_]*)_BASE_URL=(\S+)", line)
+        if m:
+            out[f"{m.group(1).lower()}_base_url"] = m.group(2)
+    return out

@@ -14,7 +14,12 @@ from quorum.config import (
     save_user_settings,
     save_validated_model,
 )
-from tests.provider_specs import CN_PROVIDERS, PROVIDER_ENV_VARS, QUORUM_ENV_VARS
+from tests.provider_specs import (
+    ALL_COMPAT_PROVIDERS,
+    CN_PROVIDERS,
+    PROVIDER_ENV_VARS,
+    QUORUM_ENV_VARS,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -379,14 +384,14 @@ class TestSettings:
 
 def test_env_example_models_match_the_provider_specs():
     """The .env.example model lists must name the models the tests use."""
-    from tests.provider_specs import CN_PROVIDERS, env_example_models
+    from tests.provider_specs import ALL_COMPAT_PROVIDERS, env_example_models
 
     examples = env_example_models()
-    for spec in CN_PROVIDERS:
+    for spec in ALL_COMPAT_PROVIDERS:
         assert examples[spec.env_prefix.lower()] == ",".join(spec.sample_models)
 
 
-@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+@pytest.mark.parametrize("spec", ALL_COMPAT_PROVIDERS, ids=lambda s: s.key)
 def test_env_example_base_url_matches_the_provider_spec(spec):
     """The documented default base URL must be the one the code uses."""
     from pathlib import Path
@@ -399,7 +404,7 @@ def test_env_example_base_url_matches_the_provider_spec(spec):
     assert f"# Optional: Override base URL (default: {spec.default_base_url})" in text
 
 
-@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+@pytest.mark.parametrize("spec", ALL_COMPAT_PROVIDERS, ids=lambda s: s.key)
 def test_env_example_documents_every_provider_variable(spec):
     """Every provider needs its three variables in .env.example."""
     from tests.provider_specs import env_example_vars
@@ -407,3 +412,12 @@ def test_env_example_documents_every_provider_variable(spec):
     example = env_example_vars()
     for var in (spec.api_key_env, spec.models_env, spec.base_url_env):
         assert var.lower() in example
+
+
+@pytest.mark.parametrize("spec", ALL_COMPAT_PROVIDERS, ids=lambda s: s.key)
+def test_readme_base_url_matches_the_provider_spec(spec):
+    """The README must point users at the endpoint the code actually uses."""
+    from tests.provider_specs import readme_base_urls
+
+    urls = readme_base_urls()
+    assert urls[spec.base_url_env.lower()] == spec.default_base_url
