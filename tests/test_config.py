@@ -14,6 +14,7 @@ from quorum.config import (
     save_user_settings,
     save_validated_model,
 )
+from tests.provider_specs import CN_PROVIDERS, PROVIDER_ENV_VARS, QUORUM_ENV_VARS
 
 
 @pytest.fixture(autouse=True)
@@ -188,17 +189,8 @@ class TestSettings:
         preventing tests from picking up real .env files.
         """
         env_vars = [
-            "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "XAI_API_KEY",
-            "OPENAI_MODELS", "ANTHROPIC_MODELS", "GOOGLE_MODELS", "XAI_MODELS",
-            "OLLAMA_API_KEY", "OLLAMA_BASE_URL",
-            "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODELS",
-            "ALIYUN_API_KEY", "ALIYUN_BASE_URL", "ALIYUN_MODELS",
-            "OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "OPENROUTER_MODELS",
-            "LMSTUDIO_API_KEY", "LMSTUDIO_BASE_URL", "LMSTUDIO_MODELS",
-            "LLAMASWAP_API_KEY", "LLAMASWAP_BASE_URL", "LLAMASWAP_MODELS",
-            "CUSTOM_API_KEY", "CUSTOM_BASE_URL", "CUSTOM_MODELS",
-            "QUORUM_METHOD", "QUORUM_SYNTHESIZER", "QUORUM_ROUNDS_PER_AGENT",
-            "QUORUM_DEFAULT_LANGUAGE",
+            *PROVIDER_ENV_VARS,
+            *QUORUM_ENV_VARS,
         ]
         for var in env_vars:
             monkeypatch.delenv(var, raising=False)
@@ -337,3 +329,49 @@ class TestSettings:
         """Test default rounds per agent."""
         settings = Settings(_env_file=None)
         assert settings.rounds_per_agent == 2
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_default_base_url(self, spec):
+        """Test the default base URL of every Chinese provider."""
+        settings = Settings(_env_file=None)
+        assert getattr(settings, spec.base_url_attr) == spec.default_base_url
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_not_configured_without_key(self, spec):
+        """Test has_<key> is False while the API key is missing."""
+        settings = Settings(_env_file=None)
+        assert getattr(settings, spec.has_attr) is False
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_configured_with_key(self, spec, monkeypatch):
+        """Test has_<key> is True once the API key is set."""
+        monkeypatch.setenv(spec.api_key_env, f"sk-{spec.key}-test-key-123456")
+        settings = Settings(_env_file=None)
+        assert getattr(settings, spec.has_attr) is True
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_base_url_overridable(self, spec, monkeypatch):
+        """Test the *_BASE_URL env var overrides the default base URL."""
+        monkeypatch.setenv(spec.base_url_env, f"https://proxy.local/{spec.key}")
+        settings = Settings(_env_file=None)
+        assert getattr(settings, spec.base_url_attr) == f"https://proxy.local/{spec.key}"
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_get_models(self, spec, monkeypatch):
+        """Test parsing the *_MODELS env var of every Chinese provider."""
+        monkeypatch.setenv(spec.models_env, ", ".join(spec.sample_models))
+        settings = Settings(_env_file=None)
+        assert settings.get_models(spec.key) == list(spec.sample_models)
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_in_available_providers(self, spec, monkeypatch):
+        """Test available_providers includes the provider once its key is set."""
+        monkeypatch.setenv(spec.api_key_env, f"sk-{spec.key}-test-key-123456")
+        settings = Settings(_env_file=None)
+        assert spec.key in settings.available_providers
+
+    @pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+    def test_cn_provider_excluded_from_available_providers(self, spec):
+        """Test the provider is absent from available_providers without a key."""
+        settings = Settings(_env_file=None)
+        assert spec.key not in settings.available_providers

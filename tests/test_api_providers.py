@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from quorum.clients.types import SystemMessage, UserMessage
+from tests.provider_specs import CN_PROVIDERS
 
 
 def run(coro):
@@ -97,6 +98,13 @@ def test_api_providers_include_deepseek_and_aliyun():
     assert "deepseek" in API_PROVIDERS and "aliyun" in API_PROVIDERS
 
 
+def test_api_providers_include_chinese_providers():
+    from quorum.clients.agent_cli import API_PROVIDERS
+
+    for spec in CN_PROVIDERS:
+        assert spec.key in API_PROVIDERS
+
+
 @patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
 @patch("quorum.providers.get_settings")
 def test_api_catalog_follows_env_config(mock_settings, mock_ollama):
@@ -150,6 +158,52 @@ def test_api_catalog_reports_deepseek_aliyun(mock_settings, mock_ollama):
     assert cat["deepseek"]["models"][0]["id"].startswith("deepseek:")
     assert cat["aliyun"]["status"] == "ok"
     assert cat["aliyun"]["models"][0]["id"] == "aliyun:qwen3.8-flash"
+
+
+@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+@patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
+@patch("quorum.providers.get_settings")
+def test_api_catalog_reports_chinese_providers(mock_settings, mock_ollama, spec):
+    """A configured Chinese provider shows up as an ok api participant."""
+    from quorum.providers import api_catalog
+
+    s = settings()
+    for p in ("openrouter", "lmstudio", "llamaswap", "custom", "google", "xai",
+              "deepseek", "aliyun"):
+        setattr(s, f"has_{p}", False)
+    for p in ("minimax", "zhipu", "moonshot", "stepfun", "volcengine", "qianfan",
+              "tokenhub", "baichuan"):
+        setattr(s, f"has_{p}", p == spec.key)
+    setattr(s, spec.api_key_attr, f"sk-{spec.key}-test-key-123456")
+    s.get_models_with_display_names.side_effect = lambda p: (
+        [(spec.sample_model, "Sample Model")] if p == spec.key else []
+    )
+    mock_settings.return_value = s
+    mock_ollama.return_value = []
+    cat = run(api_catalog())
+    assert cat[spec.key]["status"] == "ok"
+    assert cat[spec.key]["kind"] == "api"
+    assert cat[spec.key]["models"][0]["id"] == f"{spec.key}:{spec.sample_model}"
+
+
+@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+@patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
+@patch("quorum.providers.get_settings")
+def test_api_catalog_marks_unconfigured_chinese_providers_unavailable(
+    mock_settings, mock_ollama, spec
+):
+    """A Chinese provider without models is unavailable, not ok."""
+    from quorum.providers import api_catalog
+
+    s = settings()
+    setattr(s, f"has_{spec.key}", True)
+    setattr(s, spec.api_key_attr, f"sk-{spec.key}-test-key-123456")
+    s.get_models_with_display_names.side_effect = lambda p: []
+    mock_settings.return_value = s
+    mock_ollama.return_value = []
+    cat = run(api_catalog())
+    assert cat[spec.key]["status"] == "unavailable"
+    assert cat[spec.key]["models"] == []
 
 
 def test_global_config_ignores_cwd_env(tmp_path, monkeypatch):
@@ -212,3 +266,21 @@ def test_lineup_form_preselects_recommended_method(tmp_path, monkeypatch):
     assert names["tradeoff"].endswith("(recommended)") and "(recommended)" not in names["oxford"]
     # Without a recommendation the last method is kept
     assert m._lineup_schema(catalog, "standard")["properties"]["method"]["default"] == "oxford"
+
+
+@patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
+@patch("quorum.providers.get_settings")
+def test_api_catalog_detail_names_the_env_variables_to_set(mock_settings, mock_ollama):
+    from quorum.providers import api_catalog
+
+    s = settings()
+    for spec in CN_PROVIDERS:
+        setattr(s, f"has_{spec.key}", False)
+    mock_settings.return_value = s
+    mock_ollama.return_value = []
+    cat = run(api_catalog())
+    # Volcengine Ark uses ARK_* variables, not VOLCENGINE_*
+    assert "ARK_*" in cat["volcengine"]["detail"]
+    assert "VOLCENGINE" not in cat["volcengine"]["detail"]
+    assert "MINIMAX_*" in cat["minimax"]["detail"]
+    assert "ZHIPU_*" in cat["zhipu"]["detail"]
