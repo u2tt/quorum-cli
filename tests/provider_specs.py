@@ -171,12 +171,12 @@ QUORUM_ENV_VARS = (
 )
 
 
-def env_example_models() -> dict[str, str]:
-    """Read the commented *_MODELS examples from the repo's .env.example.
+def env_example_vars() -> dict[str, str]:
+    """Read the commented variable examples from the repo's .env.example.
 
-    The example file is the user-facing list of model ids per provider; the
-    test fixtures below must name the same models so the docs cannot drift
-    away from the tested defaults.
+    The example file is the user-facing configuration reference; the values
+    there must match what the code defaults to, or the docs would send users
+    to the wrong endpoint. Keys are lowercased variable names.
     """
     import re
     from pathlib import Path
@@ -184,7 +184,16 @@ def env_example_models() -> dict[str, str]:
     path = Path(__file__).resolve().parent.parent / ".env.example"
     out: dict[str, str] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^#\s*([A-Z]+)_MODELS=(.+)$", line.strip())
-        if m:
-            out[f"{m.group(1).lower()}"] = m.group(2).strip()
+        m = re.match(r"^#\s*([A-Z][A-Z0-9_]*)=(.*)$", line.strip())
+        if not m:
+            continue
+        value = m.group(2)
+        # Some lines carry a trailing comment: "# VAR=value    # note"
+        value = value.split("  #")[0].strip()
+        out[m.group(1).lower()] = value
     return out
+
+
+def env_example_models() -> dict[str, str]:
+    """The *_MODELS entries of .env.example, keyed by variable prefix."""
+    return {k[: -len("_models")]: v for k, v in env_example_vars().items() if k.endswith("_models")}

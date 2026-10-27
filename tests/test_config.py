@@ -384,3 +384,26 @@ def test_env_example_models_match_the_provider_specs():
     examples = env_example_models()
     for spec in CN_PROVIDERS:
         assert examples[spec.env_prefix.lower()] == ",".join(spec.sample_models)
+
+
+@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+def test_env_example_base_url_matches_the_provider_spec(spec):
+    """The documented default base URL must be the one the code uses."""
+    from pathlib import Path
+
+    from tests.provider_specs import env_example_vars
+
+    example = env_example_vars()
+    assert example[spec.base_url_env.lower()] == spec.default_base_url
+    text = (Path(__file__).resolve().parent.parent / ".env.example").read_text(encoding="utf-8")
+    assert f"# Optional: Override base URL (default: {spec.default_base_url})" in text
+
+
+@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+def test_env_example_documents_every_provider_variable(spec):
+    """Every provider needs its three variables in .env.example."""
+    from tests.provider_specs import env_example_vars
+
+    example = env_example_vars()
+    for var in (spec.api_key_env, spec.models_env, spec.base_url_env):
+        assert var.lower() in example
