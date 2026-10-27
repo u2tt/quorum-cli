@@ -169,3 +169,22 @@ QUORUM_ENV_VARS = (
     "QUORUM_ROUNDS_PER_AGENT",
     "QUORUM_DEFAULT_LANGUAGE",
 )
+
+
+def env_example_models() -> dict[str, str]:
+    """Read the commented *_MODELS examples from the repo's .env.example.
+
+    The example file is the user-facing list of model ids per provider; the
+    test fixtures below must name the same models so the docs cannot drift
+    away from the tested defaults.
+    """
+    import re
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parent.parent / ".env.example"
+    out: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^#\s*([A-Z]+)_MODELS=(.+)$", line.strip())
+        if m:
+            out[f"{m.group(1).lower()}"] = m.group(2).strip()
+    return out

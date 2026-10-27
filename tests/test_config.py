@@ -375,3 +375,12 @@ class TestSettings:
         """Test the provider is absent from available_providers without a key."""
         settings = Settings(_env_file=None)
         assert spec.key not in settings.available_providers
+
+
+def test_env_example_models_match_the_provider_specs():
+    """The .env.example model lists must name the models the tests use."""
+    from tests.provider_specs import CN_PROVIDERS, env_example_models
+
+    examples = env_example_models()
+    for spec in CN_PROVIDERS:
+        assert examples[spec.env_prefix.lower()] == ",".join(spec.sample_models)

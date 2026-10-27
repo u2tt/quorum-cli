@@ -206,6 +206,22 @@ def test_api_catalog_marks_unconfigured_chinese_providers_unavailable(
     assert cat[spec.key]["models"] == []
 
 
+@pytest.mark.parametrize("spec", CN_PROVIDERS, ids=lambda s: s.key)
+@patch("quorum.providers.discover_ollama_models", new_callable=AsyncMock)
+@patch("quorum.providers.get_settings")
+def test_api_catalog_hint_names_the_actual_env_prefix(mock_settings, mock_ollama, spec):
+    """The hint names the env vars the user actually sets, e.g. ARK_* not VOLCENGINE_*."""
+    from quorum.providers import api_catalog
+
+    s = settings()
+    setattr(s, f"has_{spec.key}", False)
+    s.get_models_with_display_names.side_effect = lambda p: []
+    mock_settings.return_value = s
+    mock_ollama.return_value = []
+    cat = run(api_catalog())
+    assert f"{spec.env_prefix}_*" in cat[spec.key]["detail"]
+
+
 def test_global_config_ignores_cwd_env(tmp_path, monkeypatch):
     from quorum import config
 
